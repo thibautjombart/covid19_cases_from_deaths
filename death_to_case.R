@@ -53,7 +53,7 @@ ui <- fluidPage(
                         min = 10,
                         max = 200,
                         value = 100,
-                        step = 50)
+                        step = 10)
         ),
         
         ## Show a plot of the generated distribution

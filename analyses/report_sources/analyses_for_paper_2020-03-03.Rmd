@@ -1,6 +1,6 @@
 ---
 title: "Inferring circulating COVID-19 cases from reported deaths"
-author: "Thibaut, Tim, Chris, Seb, Sam, Amy, Roz, Adam, John, and the CMMID covid19 crew"
+author: "Thibaut Jombart, Timothy Russel, Sam Abbott, Christopher Jarvis, Amy Gimma, Yang Liu, Sam Clifford, Sebastian Funk, Hamish Gibbs, Rosalind Eggo, CMMID nCov working group, Adam Kurchaski, John Edmunds"
 date: "`r format(Sys.time(), '%A %d %B %Y')`"
 output:
   html_document:
@@ -292,8 +292,10 @@ extract_results <- function(x) {
   x <- x[get_dates(x) == today, ] %>%
     as.integer()
   out <- c(mean(x),
+           median(x),
            quantile(x, c(.025, .25, .75, .975)))
   names(out) <- c("average",
+                  "median",
                   "lower_95",
                   "lower_50",
                   "upper_50",

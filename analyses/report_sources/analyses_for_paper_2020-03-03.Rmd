@@ -58,6 +58,7 @@ library(epitrix)
 library(tidyverse)
 library(projections)
 library(parallel)
+library(lubridate)
 
 ```
 
@@ -73,7 +74,8 @@ These scripts will load:
 ```{r read_scripts}
 
 rfh_load_scripts()
-path_to_simulator <- here("rds", "simulate_cases.rds")
+path_to_simulator <- here("analyses", 
+                          "rds", "simulate_cases.rds")
 simulate_cases <- readRDS(path_to_simulator)
 
 ```
@@ -321,7 +323,65 @@ results_one_case %>%
 ```
 
 
+## Country Specific analyses
 
+```{r country_cases_data}
+
+
+cases_path <- here::here("analyses",
+                         "data",
+           "bno_cases_data.csv")
+
+df <- read.csv(cases_path, stringsAsFactors = FALSE) %>% 
+  mutate(date_hm = as.Date(date, format = "%d/%m/%Y"))
+
+head(df)
+
+```
+
+
+## France
+
+
+
+We combine different values of CFR (1%, 2%, 3%) and reproduction numbers (1.5,
+2, 3) and run 200 simulations for each (each simulation generates 50
+trajectories for a given combination of onset dates):
+
+```{r sims_cases_france}
+
+france_deaths <- df %>% filter(country == "France",
+                        new_death == 1)
+
+france %>% filter(new_death == 1)
+
+france_num_deaths <- sum(france_deaths$new_death)
+
+france_death_first <- min(france_deaths$date)
+france_death_latest <- max(france_deaths$date)
+
+params <- expand.grid(R = c(1.5, 2, 3),
+                      cfr = c(0.01, 0.02, 0.03, 0.1))
+params
+today <- Sys.Date()
+
+
+sims_one_case <- mclapply(
+    seq_len(nrow(params)),
+    function(i) simulate_cases(
+                    france_death_latest,
+                    n_sim = 200,
+                    R = params$R[i],
+                    cfr = params$cfr[i]),
+    mc.cores = 3
+)
+
+
+```
+
+
+
+## Italy
 
 
 

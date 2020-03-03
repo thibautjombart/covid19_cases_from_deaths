@@ -20,6 +20,23 @@ ui <- fluidPage(
   ## Application title
   titlePanel("COVID-19: infer cases from deaths"),
   
+  ## Author list and disclaimer
+  withTags({
+    div(
+        HTML("<p><strong>Authors</strong>: 
+          Thibaut Jombart, Sam Abbott, Amy Gimma, Kevin Zandvoort,
+          Christopher Jarvis, Timothy Russel, Sebastian Funk, Hamrish Gibbs, 
+          Rosalind Eggo, Adam Kucharski, <i>CMMID COVID-19 Working Group*</i>,
+          John Edmunds</p>"),
+        HTML("<p><strong>Disclaimer:</strong> 
+          This model is not peer-reviewed. The results generated here should not be
+          interpreted to predict exact numbers of cases. Please 
+          visit the <a href='https://cmmid.github.io/topics/covid19/'>
+          LSHTM CMMID website</a> for more resources on the COVID-19 
+          outbreak.<p>")
+    )
+  }),
+  
   ## Inputs for the model below
   sidebarLayout(
     sidebarPanel(
@@ -73,7 +90,7 @@ ui <- fluidPage(
         ),
         tabPanel("Summary table",
                  h2("Summary table: cumulative case counts"),
-                 DT::dataTableOutput("summary_table", width = "60%"),
+                 DT::dataTableOutput("summary_table", width = "75%"),
                  br(),
                  br()
         )

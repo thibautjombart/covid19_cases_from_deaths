@@ -1,6 +1,6 @@
 ---
 title: "Inferring circulating COVID-19 cases from reported deaths"
-author: "Thibaut, Tim, Chris, Amy, Adam, John, and the CMMID covid19 crew"
+author: "Thibaut Jombart, Timothy Russel, Sam Abbott, Christopher Jarvis, Amy Gimma, Yang Liu, Sam Clifford, Sebastian Funk, Hamish Gibbs, Rosalind Eggo, CMMID nCov working group, Adam Kurchaski, John Edmunds"
 date: "`r format(Sys.time(), '%A %d %B %Y')`"
 output:
   html_document:
@@ -117,18 +117,15 @@ The principle of the estimation is:
 
 ## Parameters of the model
 
-This section contain Tim's information on the various parameters. We use these
+This section contain information on the various parameters. We use these
 data to generate distribution, with discretisation when needed.
 
 * **serial interval**: mean of 4.7 days, s.d. of 2.9 days (log normal
   distribution fit); source:
   https://www.medrxiv.org/content/10.1101/2020.02.03.20019497v2.full.pdf.
 
-* **Onset-to-death distribution**: log-Normal with mean 20.2 days and standard
-  deviation 11.6;
-
-<!-- * **Onset-to-death distribution**: Gamma(4.726, 0.3151). Source: -->
-<!--   https://www.mdpi.com/2077-0383/9/2/538 -->
+* **Onset-to-death distribution**: a Gamma(4.726, 0.3151). Source:
+  https://www.mdpi.com/2077-0383/9/2/538
 
 * **$R_0$**: somewhere between 1.6 - 4 depending on where the outbreak is and
   which paper you look at. Perhaps we should give a few different options for
@@ -174,21 +171,39 @@ plot(0:50, serial_interval$d(0:50),
 `r_onset_death` will generate delays from onset to death using a discretised
 Gamma with parameters:
 
-* mean: 20.2
-* sd: 11.6
+* shape: 4.726
+* rate: 0.3151
 
-corresponding to `lnorm(2.839078, 0.577242)`.
+Alternatively, we also provide a log-normal distribution `lnorm(2.839078,
+0.577242)` corresponding to a mean of 20.2 days and sd of 11.6 days, accouting
+for right-censoring, but s.
+
 
 
 
 ```{r onset_death}
 
-## temporary tweak to check effect of narrower delays
-## onset_death <- distcrete("norm", w = 0, interval = 1,
-##                          mean = 14,
-##                          sd = 1)
+r_onset_death <- function(n = 1, min_delay =1, max_delay = 60) {
+  ## r_onset_death() will simulate delays from the above distribution, ensuring
+  ## that simulated values do not exceed a given maximum;
+  ## note: this is total overkill for now
+  
+  onset_death <- distcrete("gamma", w = 0, interval = 1,
+                            shape = 4.726,
+                           rate = 0.3151)
+  
+  out <- onset_death$r(n)
+  to_replace <- (out < min_delay) | (out > max_delay)
+  while (any(to_replace)) {
+    out[to_replace] <- onset_death$r(sum(to_replace))
+    to_replace <- out > max_delay
+  }  
+  out
+}
 
-r_onset_death <- function(n = 1, min_delay =1, max_delay = 100) {
+
+
+r_onset_death_alternative <- function(n = 1, min_delay = 1, max_delay = 60) {
   ## r_onset_death() will simulate delays from the above distribution, ensuring
   ## that simulated values do not exceed a given maximum;
   ## note: this is total overkill for now
@@ -360,6 +375,8 @@ Reduce(c, sim_onset) %>%
        title = "Cumulative epicurve simulated from CFR, by date of onset")
 
 ```
+
+
 
 
 
@@ -580,9 +597,17 @@ make_simulator <- function(serial_interval,
 }
 
 
+## default simulator
 simulate_cases <- make_simulator(serial_interval,
                                  r_onset_death,
                                  50)
+
+
+## alternative simulator, using right-censored distribution for the onset->death
+## delay; this one creates longer delays and will tend to over-estimate cases
+simulate_cases_alternative <- make_simulator(serial_interval,
+                                             r_onset_death_alternative,
+                                             50)
 
 
 ```
@@ -643,12 +668,26 @@ if (!dir.exists("rds_outputs")) {
 }
 
 ## export to local folder
-rio::export(simulate_cases, file = "rds_outputs/simulate_cases.rds")
+rio::export(simulate_cases,
+            file = "rds_outputs/simulate_cases.rds")
+rio::export(simulate_cases_alternative,
+            file = "rds_outputs/simulate_cases_alternative.rds")
 
 ## export to main rds folder
-rio::export(simulate_cases, file = here("rds", "simulate_cases.rds"))
+rio::export(simulate_cases,
+            file = here("rds", "simulate_cases.rds"))
+rio::export(simulate_cases_alternative,
+            file = here("rds", "simulate_cases_alternative.rds"))
+
+## export to the app's folder
+rio::export(simulate_cases,
+            file = here("..", "app", "rds", "simulate_cases.rds"))
+rio::export(simulate_cases_alternative,
+            file = here("..", "app", "rds", "simulate_cases_alternative.rds"))
 
 ```
+
+
 
 
 

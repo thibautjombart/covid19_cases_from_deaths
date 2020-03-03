@@ -16,24 +16,30 @@ lapply(scripts, source)
 
 ## Define UI for application that draws a histogram
 ui <- fluidPage(
+  ## Call Mathjax once to display equations throughout the document
+  withMathJax(),
   
   ## Application title
-  titlePanel("COVID-19: infer cases from deaths"),
+  titlePanel("Inferring COVID-19 cases from deaths of confirmed cases"),
   
   ## Author list and disclaimer
   withTags({
     div(
-        HTML("<p><strong>Authors</strong>: 
+        HTML("<p style='max-width:95%;'><strong>Authors</strong>: 
           Thibaut Jombart, Sam Abbott, Amy Gimma, Kevin Zandvoort,
           Christopher Jarvis, Timothy Russel, Sebastian Funk, Hamrish Gibbs, 
-          Rosalind Eggo, Adam Kucharski, <i>CMMID COVID-19 Working Group*</i>,
+          Rosalind Eggo, Adam Kucharski, 
+          <a href='https://cmmid.github.io/groups/ncov-group'>
+          <i>CMMID COVID-19 Working Group*</i></a>,
           John Edmunds</p>"),
-        HTML("<p><strong>Disclaimer:</strong> 
-          This model is not peer-reviewed. The results generated here should not be
-          interpreted to predict exact numbers of cases. Please 
-          visit the <a href='https://cmmid.github.io/topics/covid19/'>
-          LSHTM CMMID website</a> for more resources on the COVID-19 
-          outbreak.<p>")
+        HTML("<p style='margin-bottom:14px;max-width:95%;'>
+          <strong>Disclaimer:</strong> 
+          This model is not peer-reviewed. The results generated here should not 
+          be interpreted to predict exact numbers of cases. Please read the 
+          <a href='https://cmmid.github.io/topics/covid19/current-patterns-transmission/cases-from-deaths.html'>
+          study summary</a> on the
+          <a href='https://cmmid.github.io/topics/covid19/'>
+          LSHTM CMMID website</a>.<p>")
     )
   }),
   
@@ -42,8 +48,9 @@ ui <- fluidPage(
     sidebarPanel(
       h2("Data input"),
       textInput("date_death",
-                paste("Enter dates of death here on separate lines,",
-                      "using 'yyyy-mm-dd' format, e.g. 2020-02-18:"),
+                paste("Dates of Death",
+                      "(Format 'yyyy-mm-dd', e.g. 2020-02-18,",
+                      "separated by spaces or new lines):"),
                 paste(Sys.Date(), "...")),
       verbatimTextOutput("date_clean"),
       h2("Model input"),

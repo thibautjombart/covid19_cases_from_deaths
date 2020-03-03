@@ -44,7 +44,7 @@ ui <- fluidPage(
                   step = 0.1),
       sliderInput("duration",
                   "Duration of simulations (days after last death):",
-                  min = 0,
+                  min = 1,
                   max = 14,
                   value = 1,
                   step = 1),

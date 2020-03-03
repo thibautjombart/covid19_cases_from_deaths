@@ -1,6 +1,6 @@
 ---
 title: "Inferring circulating COVID-19 cases from reported deaths"
-author: "Thibaut Jombart, Timothy Russel, Sam Abbott, Christopher Jarvis, Amy Gimma, Yang Liu, Sam Clifford, Sebastian Funk, Hamish Gibbs, Rosalind Eggo, CMMID nCov working group, Adam Kurchaski, John Edmunds"
+author: "Thibaut Jombart, Timothy Russel, Sam Abbott, Christopher Jarvis, Amy Gimma, Sam Clifford, Sebastian Funk, Hamish Gibbs, Yang Liu, Rosalind Eggo, CMMID nCov working group, Adam Kurchaski, John Edmunds"
 date: "`r format(Sys.time(), '%A %d %B %Y')`"
 output:
   html_document:

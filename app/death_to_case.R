@@ -16,9 +16,11 @@ lapply(scripts, source)
 
 ## Define UI for application that draws a histogram
 ui <- fluidPage(
+  ## Call Mathjax once to display equations throughout the document
+  withMathJax(),
   
   ## Application title
-  titlePanel("COVID-19: infer cases from deaths"),
+  titlePanel("Infering COVID-19 cases from deaths of confirmed cases"),
   
   ## Author list and disclaimer
   withTags({

@@ -35,10 +35,11 @@ ui <- fluidPage(
         HTML("<p style='margin-bottom:14px;max-width:95%;'>
           <strong>Disclaimer:</strong> 
           This model is not peer-reviewed. The results generated here should not 
-          be interpreted to predict exact numbers of cases. Please 
-          visit the <a href='https://cmmid.github.io/topics/covid19/'>
-          LSHTM CMMID website</a> for more resources on the COVID-19 
-          outbreak.<p>")
+          be interpreted to predict exact numbers of cases. Please read the 
+          <a href='https://cmmid.github.io/topics/covid19/current-patterns-transmission/cases-from-deaths.html'>
+          study summary</a> on the
+          <a href='https://cmmid.github.io/topics/covid19/'>
+          LSHTM CMMID website</a>.<p>")
     )
   }),
   

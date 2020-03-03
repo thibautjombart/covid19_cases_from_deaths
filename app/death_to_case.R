@@ -20,7 +20,7 @@ ui <- fluidPage(
   withMathJax(),
   
   ## Application title
-  titlePanel("Infering COVID-19 cases from deaths of confirmed cases"),
+  titlePanel("Inferring COVID-19 cases from deaths of confirmed cases"),
   
   ## Author list and disclaimer
   withTags({

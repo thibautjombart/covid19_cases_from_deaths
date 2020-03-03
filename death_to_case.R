@@ -137,7 +137,18 @@ server <- function(input, output) {
     if (!is.null(x)) {
       cumulative_counts <- cumulate(x()$projections)
       summary_table <- t(apply(cumulative_counts, 1, summary_function))
-      colnames(summary_table) <- c("lower 95%",
+
+      ## Make dates a variable
+      dates <- rownames(summary_table)
+      summary_table <- as.data.frame(summary_table)
+      rownames(summary_table) <- NULL
+      summary_table$date <- as.Date(dates)
+      
+      ##Sort variables
+      summary_table <- summary_table[, c(ncol(summary_table), 1:(ncol(summary_table) - 1))]
+    
+      colnames(summary_table) <- c("Date",
+                                   "lower 95%",
                                    "lower 50%",
                                    "upper 50%",
                                    "upper 95%")

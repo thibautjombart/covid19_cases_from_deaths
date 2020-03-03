@@ -433,8 +433,6 @@ results_jp_cases %>%
   knitr::kable()
   
 
-extract_results(sims_jp_cases)
-
 
 ```
 

@@ -73,7 +73,7 @@ These scripts will load:
 ```{r read_scripts}
 
 rfh_load_scripts()
-path_to_simulator <- here("rds", "simulate_cases.rds")
+path_to_simulator <- here::here("rds", "simulate_cases.rds")
 simulate_cases <- readRDS(path_to_simulator)
 
 ```
@@ -267,16 +267,28 @@ params <- expand.grid(R = c(1.5, 2, 3),
 params
 today <- Sys.Date()
 
+if(Sys.info()["sysname"] == "Windows"){
+  cores <- 1
+} else{
+  cores <- 3
+}
 
-sims_one_case <- mclapply(
+## Function to run simulations for the death dates 
+sim_deaths <- function(death_dates) {
+  mclapply(
     seq_len(nrow(params)),
     function(i) simulate_cases(
-                    today,
+                    death_dates,
                     n_sim = 200,
                     R = params$R[i],
                     cfr = params$cfr[i]),
-    mc.cores = 3
-)
+    mc.cores = cores
+  )
+}  
+
+
+
+sims_one_case <- sim_deaths(today)
 
 
 ```
@@ -287,9 +299,9 @@ on the day of the death.
 ```{r results_one_case}
 
 ## function to extract results
-extract_results <- function(x) {
+extract_results <- function(x, date) {
   x <- cumulate(x$projections)
-  x <- x[get_dates(x) == today, ] %>%
+  x <- x[get_dates(x) == date, ] %>%
     as.integer()
   out <- c(mean(x),
            median(x),
@@ -304,11 +316,16 @@ extract_results <- function(x) {
   round(out)
 }
 
+## Function for get averages and quantiles
+get_summaries <- function(sims_cases, date) {
+  results_case <- Reduce(rbind, lapply(sims_cases, extract_results, date))
+  results_case <- cbind(params, results_case)
+  rownames(results_case) <- NULL
+  results_case
+}
 
-## get table
-results_one_case <- Reduce(rbind, lapply(sims_one_case, extract_results))
-results_one_case <- cbind(params, results_one_case)
-rownames(results_one_case) <- NULL
+
+results_one_case <- get_summaries(sims_one_case, today)
 
 ```
 
@@ -321,8 +338,103 @@ results_one_case %>%
 ```
 
 
+## Country Specific analyses
+
+```{r country_cases_data}
 
 
+cases_path <- here::here("data",
+           "bno_cases_data.csv")
+
+df <- read.csv(cases_path, stringsAsFactors = FALSE) %>% 
+  mutate(date = as.Date(date, format = "%d/%m/%Y"))
+
+head(df)
+
+```
+
+
+## France
+
+Run different values of CFR and reproduction number for France. Run 200 simulations for each (each simulation generates 50
+trajectories for a given combination of onset dates):
+
+```{r sims_cases_france}
+
+## Function to get dates of death for a country
+extract_death_dates <- function(df, country) {
+  country_df <- df[df$country == country & df$new_death > 0,]
+  death_dates <- rep(country_df$date, country_df$new_death)
+  death_dates  
+}
+
+fr_death_dates <- extract_death_dates(df, "France")
+
+sims_fr_cases <- sim_deaths(fr_death_dates)
+
+fr_max_date <- max(fr_death_dates)
+  
+## get table
+results_fr_cases <- get_summaries(sims_fr_cases, fr_max_date)
+
+## print table
+results_fr_cases %>%
+  knitr::kable()
+
+```
+
+We extract quantiles and averages for the different combinations of parameters,
+on the day of the death.
+
+## Italy
+
+
+Run different values of CFR and reproduction number for Italy. Run 200 simulations for each (each simulation generates 50
+trajectories for a given combination of onset dates):
+
+
+```{r sims_cases_italy}
+
+
+it_death_dates <- extract_death_dates(df, "Italy")
+
+sims_it_cases <- sim_deaths(it_death_dates)
+
+it_max_date <- max(it_death_dates)
+
+results_it_cases <- get_summaries(sims_it_cases, it_max_date)
+
+## print table
+results_it_cases %>%
+  knitr::kable()
+  
+
+```
+
+## Japan
+
+Run different values of CFR and reproduction number for Japan. Run 200 simulations for each (each simulation generates 50
+trajectories for a given combination of onset dates):
+
+
+
+```{r sims_cases_japan}
+
+jp_death_dates <- extract_death_dates(df, "Japan")
+
+sims_jp_cases <- sim_deaths(jp_death_dates)
+
+jp_max_date <- max(jp_death_dates)
+
+results_jp_cases <- get_summaries(sims_jp_cases, jp_max_date)
+
+## print table
+results_jp_cases %>%
+  knitr::kable()
+  
+
+
+```
 
 
 

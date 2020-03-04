@@ -1,4 +1,8 @@
 
+# Using the shiny app
+
+All content below relates to the `app/` folder.
+
 ## What this does
 
 Infer the number of circulating COVID-19 cases from newly reported deaths. This

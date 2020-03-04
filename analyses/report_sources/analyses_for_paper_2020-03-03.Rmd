@@ -279,7 +279,7 @@ sim_deaths <- function(death_dates, params = NULL) {
     seq_len(nrow(params)),
     function(i) simulate_cases(
                     death_dates,
-                    n_sim = 10,
+                    n_sim = 200,
                     R = params$R[i],
                     cfr = params$cfr[i]),
     mc.cores = cores

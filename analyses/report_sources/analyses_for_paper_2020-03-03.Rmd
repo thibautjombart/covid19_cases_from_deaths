@@ -459,10 +459,31 @@ results_jp_cases %>%
   knitr::kable()
   
 
-
 ```
 
 
+## South Korea One case
+
+Run different values of CFR and reproduction number for Japan. Run 200 simulations for each (each simulation generates 50
+trajectories for a given combination of onset dates):
+
+
+
+```{r sims_cases_japan}
+
+skr_death_dates <- extract_death_dates(df, "South Korea")
+
+skr_first_death_date <- min(skr_death_dates)
+
+sims_skr_cases <- sim_deaths(skr_first_death_date)
+
+results_skr_cases <- get_summaries(sims_skr_cases, skr_first_death_date)
+
+## print table
+results_skr_cases %>%
+  knitr::kable()
+
+```
 
 
 

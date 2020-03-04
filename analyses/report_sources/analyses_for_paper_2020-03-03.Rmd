@@ -279,7 +279,7 @@ sim_deaths <- function(death_dates, params = NULL) {
     seq_len(nrow(params)),
     function(i) simulate_cases(
                     death_dates,
-                    n_sim = 200,
+                    n_sim = 10,
                     R = params$R[i],
                     cfr = params$cfr[i]),
     mc.cores = cores
@@ -289,7 +289,6 @@ sim_deaths <- function(death_dates, params = NULL) {
 
 
 sims_one_case <- sim_deaths(today, params)
-
 
 ```
 
@@ -317,7 +316,7 @@ extract_results <- function(x, date) {
 }
 
 ## Function for get averages and quantiles
-get_summaries <- function(sims_cases, date) {
+get_summaries <- function(sims_cases, date, params = NULL) {
   results_case <- Reduce(rbind, lapply(sims_cases, extract_results, date))
   results_case <- cbind(params, results_case)
   rownames(results_case) <- NULL
@@ -325,7 +324,7 @@ get_summaries <- function(sims_cases, date) {
 }
 
 
-results_one_case <- get_summaries(sims_one_case, today)
+results_one_case <- get_summaries(sims_one_case, today, params)
 
 ```
 
@@ -380,7 +379,7 @@ sims_fr_cases <- sim_deaths(fr_death_dates, params_fr)
 fr_max_date <- max(fr_death_dates)
   
 ## get table
-results_fr_cases <- get_summaries(sims_fr_cases, fr_max_date)
+results_fr_cases <- get_summaries(sims_fr_cases, fr_max_date, params_fr)
 
 ## print table
 results_fr_cases %>%
@@ -412,13 +411,12 @@ sims_it_cases <- sim_deaths(it_death_dates, params_it)
 
 it_max_date <- max(it_death_dates)
 
-results_it_cases <- get_summaries(sims_it_cases, it_max_date)
+results_it_cases <- get_summaries(sims_it_cases, it_max_date, params_it)
 
 ## print table
 results_it_cases %>%
   knitr::kable()
   
-
 ```
 
 ## Japan
@@ -441,7 +439,7 @@ sims_jp_cases <- sim_deaths(jp_death_dates, params_jp)
 
 jp_max_date <- max(jp_death_dates)
 
-results_jp_cases <- get_summaries(sims_jp_cases, jp_max_date)
+results_jp_cases <- get_summaries(sims_jp_cases, jp_max_date, params_jp)
 
 ## print table
 results_jp_cases %>%
@@ -452,7 +450,33 @@ results_jp_cases %>%
 ```
 
 
+## South Korea
 
+Run different values of CFR and reproduction number for South Korea. Run 200 simulations for each (each simulation generates 50
+trajectories for a given combination of onset dates):
+
+
+
+```{r sims_cases_japan}
+
+sk_death_dates <- extract_death_dates(df, "South Korea")
+
+## Define country specific parameters - based on report 95%CI with data as of 2020-03-02
+## Rt estimates have declined since initial outbreak so these numbers will be conservative?
+params_sk <- expand.grid(R = c(1.3, 1.5),
+                      cfr = c(0.01, 0.02, 0.03, 0.1))
+
+sims_sk_cases <- sim_deaths(sk_death_dates, params_sk)
+
+sk_max_date <- max(sk_death_dates)
+
+results_sk_cases <- get_summaries(sims_sk_cases, sk_max_date, params_sk)
+
+## print table
+results_sk_cases %>%
+  knitr::kable()
+  
+```
 
 
 <!-- ======================================================= --> 

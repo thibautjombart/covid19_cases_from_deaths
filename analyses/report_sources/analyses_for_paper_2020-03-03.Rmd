@@ -267,29 +267,51 @@ params <- expand.grid(R = c(1.5, 2, 3),
 params
 today <- Sys.Date()
 
+## Function to run simulations for the death dates
 if(Sys.info()["sysname"] == "Windows"){
-  cores <- 1
-} else{
+  sim_deaths <- function(death_dates, params = NULL) {
+    
+    cl <- parallel::makeCluster(max(parallel::detectCores()-1,1))
+
+    clusterCall(cl, function() library(here))
+    clusterCall(cl, function() library(reportfactory))
+    clusterCall(cl, function() library(incidence))
+    clusterCall(cl, function() library(distcrete))
+    clusterCall(cl, function() library(epitrix))
+    clusterCall(cl, function() library(tidyverse))
+    clusterCall(cl, function() library(projections))
+    clusterCall(cl, function() library(parallel))
+    clusterExport(cl, list("death_dates", "params"), envir = environment())
+    clusterExport(cl, list("simulate_cases"), envir = .GlobalEnv)
+    
+    out <- parallel::parLapply(
+      cl,
+      seq_len(nrow(params)),
+      function(i) simulate_cases(
+                      death_dates,
+                      n_sim = 200,
+                      R = params$R[i],
+                      cfr = params$cfr[i])
+    )
+    parallel::stopCluster(cl)
+    return(out)
+  }
+} else {
   cores <- 3
+  sim_deaths <- function(death_dates, params = NULL) {
+    mclapply(
+      seq_len(nrow(params)),
+      function(i) simulate_cases(
+                      death_dates,
+                      n_sim = 200,
+                      R = params$R[i],
+                      cfr = params$cfr[i]),
+      mc.cores = cores
+    )
+  }  
 }
 
-## Function to run simulations for the death dates 
-sim_deaths <- function(death_dates) {
-  mclapply(
-    seq_len(nrow(params)),
-    function(i) simulate_cases(
-                    death_dates,
-                    n_sim = 200,
-                    R = params$R[i],
-                    cfr = params$cfr[i]),
-    mc.cores = cores
-  )
-}  
-
-
-
-sims_one_case <- sim_deaths(today)
-
+sims_one_case <- sim_deaths(today, params)
 
 ```
 
@@ -317,7 +339,7 @@ extract_results <- function(x, date) {
 }
 
 ## Function for get averages and quantiles
-get_summaries <- function(sims_cases, date) {
+get_summaries <- function(sims_cases, date, params = NULL) {
   results_case <- Reduce(rbind, lapply(sims_cases, extract_results, date))
   results_case <- cbind(params, results_case)
   rownames(results_case) <- NULL
@@ -325,7 +347,7 @@ get_summaries <- function(sims_cases, date) {
 }
 
 
-results_one_case <- get_summaries(sims_one_case, today)
+results_one_case <- get_summaries(sims_one_case, today, params)
 
 ```
 
@@ -333,6 +355,7 @@ results_one_case <- get_summaries(sims_one_case, today)
 
 ## print table
 results_one_case %>%
+  format(big.mark=" ") %>%
   knitr::kable()
 
 ```
@@ -370,15 +393,21 @@ extract_death_dates <- function(df, country) {
 
 fr_death_dates <- extract_death_dates(df, "France")
 
-sims_fr_cases <- sim_deaths(fr_death_dates)
+## Define country specific parameters - based on report 95%CI with data as of 2020-03-02
+## No estimates for France so using current estimates from Italy
+params_fr <- expand.grid(R = c(2.0, 2.4),
+                      cfr = c(0.01, 0.02, 0.03, 0.1))
+  
+sims_fr_cases <- sim_deaths(fr_death_dates, params_fr)
 
 fr_max_date <- max(fr_death_dates)
   
 ## get table
-results_fr_cases <- get_summaries(sims_fr_cases, fr_max_date)
+results_fr_cases <- get_summaries(sims_fr_cases, fr_max_date, params_fr)
 
 ## print table
 results_fr_cases %>%
+  format(big.mark=" ") %>%
   knitr::kable()
 
 ```
@@ -398,17 +427,22 @@ trajectories for a given combination of onset dates):
 
 it_death_dates <- extract_death_dates(df, "Italy")
 
-sims_it_cases <- sim_deaths(it_death_dates)
+## Define country specific parameters - based on report 95%CI with data as of 2020-03-02
+## Rt estimates have declined since initial outbreak so these numbers will be conservative?
+params_it <- expand.grid(R = c(2.0, 2.4),
+                      cfr = c(0.01, 0.02, 0.03, 0.1))
+
+sims_it_cases <- sim_deaths(it_death_dates, params_it)
 
 it_max_date <- max(it_death_dates)
 
-results_it_cases <- get_summaries(sims_it_cases, it_max_date)
+results_it_cases <- get_summaries(sims_it_cases, it_max_date, params_it)
 
 ## print table
 results_it_cases %>%
+  format(big.mark=" ") %>%
   knitr::kable()
   
-
 ```
 
 ## Japan
@@ -422,23 +456,82 @@ trajectories for a given combination of onset dates):
 
 jp_death_dates <- extract_death_dates(df, "Japan")
 
-sims_jp_cases <- sim_deaths(jp_death_dates)
+## Define country specific parameters - based on report 95%CI with data as of 2020-03-02
+## Restricted to 1> R estimates due to bug/feature of branching process?
+## Rt estimates have declined since initial outbreak so these numbers will be conservative?
+params_jp <- expand.grid(R = c(1.0, 1.5),
+                      cfr = c(0.01, 0.02, 0.03, 0.1))
+
+sims_jp_cases <- sim_deaths(jp_death_dates, params_jp)
 
 jp_max_date <- max(jp_death_dates)
 
-results_jp_cases <- get_summaries(sims_jp_cases, jp_max_date)
+results_jp_cases <- get_summaries(sims_jp_cases, jp_max_date, params_jp)
 
 ## print table
 results_jp_cases %>%
+  format(big.mark=" ") %>%
   knitr::kable()
-  
-
 
 ```
 
 
+## South Korea
+
+Run different values of CFR and reproduction number for South Korea. Run 200 simulations for each (each simulation generates 50
+trajectories for a given combination of onset dates):
 
 
+
+```{r sims_cases_south_korea}
+
+sk_death_dates <- extract_death_dates(df, "South Korea")
+
+## Define country specific parameters - based on report 95%CI with data as of 2020-03-02
+## Rt estimates have declined since initial outbreak so these numbers will be conservative?
+params_sk <- expand.grid(R = c(1.3, 1.5),
+                      cfr = c(0.01, 0.02, 0.03, 0.1))
+
+sims_sk_cases <- sim_deaths(sk_death_dates, params_sk)
+
+sk_max_date <- max(sk_death_dates)
+
+results_sk_cases <- get_summaries(sims_sk_cases, sk_max_date, params_sk)
+
+## print table
+results_sk_cases %>%
+  format(big.mark=" ") %>%
+  knitr::kable()
+  
+```
+
+## China
+
+Run different values of CFR and reproduction number for China based on deaths reported up to the 24th of January. Run 200 simulations for each (each simulation generates 50 trajectories for a given combination of onset dates):
+
+
+```{r sims_cases_china}
+
+ch_death_dates <- extract_death_dates(df, "China")
+
+## Restrict deaths to those from the 24th Jan and previously
+ch_death_dates <- ch_death_dates[as.Date(ch_death_dates) <= as.Date("2020-01-24")]
+
+## Define country specific parameters - based on https://doi.org/10.12688/wellcomeopenres.15718.1 (may have Rt on this by end of today)
+params_ch <- expand.grid(R = c(2.0, 2.7),
+                      cfr = c(0.01, 0.02, 0.03, 0.1))
+
+sims_ch_cases <- sim_deaths(ch_death_dates, params_ch)
+
+ch_max_date <- max(ch_death_dates)
+
+results_ch_cases <- get_summaries(sims_ch_cases, ch_max_date, params_ch)
+
+## print table
+results_ch_cases %>%
+  format(big.mark=" ") %>%
+  knitr::kable()
+```
 
 <!-- ======================================================= --> 
 <!-- ======================================================= --> 

@@ -1,0 +1,434 @@
+---
+title: "Inferring circulating COVID-19 cases from reported deaths"
+author: "Thibaut Jombart, Sam Abbott, Amy Gimma, Christopher Jarvis, Timothy Russel, Sam Clifford, Sebastian Funk, Hamish Gibbs, Yang Liu, Kevin van Zandvoort, Rosalind Eggo, Adam Kurchaski, CMMID nCov working group, John Edmunds"
+date: "`r format(Sys.time(), '%A %d %B %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    highlight: zenburn
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+    toc_collapse: no
+    toc_depth: 4
+    toc_float: yes
+    css: !expr here::here('css', 'style.css')
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      collapse = TRUE,
+                      fig.width = 8,
+                      fig.height = 6,
+                      dpi = 150,
+                      dev = c("png", "pdf"),
+                      fig.path = "figures/",
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+
+
+<!-- ======================================================= -->
+<!-- ======================================================= -->
+<!-- ======================================================= -->
+
+# Data preparation {.tabset .tabset-fade .tabset-pills}
+
+## Outline
+
+
+* **Load scripts**: loads libraries and useful scripts used in the analyses; all
+`.R` files contained in `scripts` at the root of the factory are automatically
+loaded
+
+* **Load data**: imports datasets, and may contain some *ad hoc* changes to the
+data such as specific data cleaning (not used in other reports), new variables
+used in the analyses, etc.
+
+
+
+## Load packages
+
+```{r libraries}
+
+library(here)
+library(reportfactory)
+library(incidence)
+library(distcrete)
+library(epitrix)
+library(tidyverse)
+library(projections)
+library(parallel)
+library(cowplot)
+
+```
+
+
+
+## Load scripts
+
+These scripts will load:
+
+* all local scripts, stored as `.R` filesinside `/scripts/`
+* all global scripts, i.e. stored outside the factory in `../scripts/`
+
+```{r read_scripts}
+
+rfh_load_scripts()
+path_to_simulator <- here::here("rds", "simulate_cases.rds")
+simulate_cases <- readRDS(path_to_simulator)
+
+```
+
+
+
+
+
+
+
+
+<!-- ======================================================= -->
+<!-- ======================================================= -->
+<!-- ======================================================= -->
+
+# Model description {.tabset .tabset-fade .tabset-pills}
+
+
+## Outline
+
+We aim to estimate the number of currently circulating cases on a
+given day given a number of deaths reported recently. 
+
+The principle of the estimation is:
+
+1. for each death, draw a likely date of onset from the onset-to-death delay
+   distribution; obtain one date of onset per death
+
+2. allocate a batch of $1/CFR$ cases to each date of onset; for each batch,
+   simulate epi trajectories using a branching process (Poisson distribution)
+   
+3. add cases simulated from the different batches
+
+4. repeat steps 1-3 a large number of times (`n_sim`), to reflect uncertainty on
+   the actual dates of onsets
+
+5. put all simulations together into a single `projections` object, and derive
+   statistics from the simulations
+
+
+ 
+
+
+## Parameters of the model
+
+This section contain Tim's information on the various parameters. We use these
+data to generate distribution, with discretisation when needed.
+
+* **serial interval**: mean of 4.7 days, s.d. of 2.9 days (log normal
+  distribution fit); source:
+  https://www.medrxiv.org/content/10.1101/2020.02.03.20019497v2.full.pdf.
+
+* **Onset-to-death distribution**: a Gamma(4.726, 0.3151). Source:
+  https://www.mdpi.com/2077-0383/9/2/538
+
+* **$R_0$**: somewhere between 1.6 - 4 depending on where the outbreak is and
+  which paper you look at. Perhaps we should give a few different options for
+  this as an input with a reasonable default value of 2.0? I only say this as it
+  seems to be so context-specific. Source:
+  https://wellcomeopenresearch.org/articles/5-17
+
+* **CFR**: see that markdown file I sent to you for my estimates. Chris has some
+  of his own. All estimates of this are a bit rubbish atm, but better ones are
+  incoming (tomorrow!). For now something between 1-2% is pretty reasonable
+
+
+
+
+## Serial interval
+
+`serial_interval` will be a `distcrete` object containing the serial interval
+distribution for a discretised log-normal with mean 4.7 and sd 2.9.
+
+```{r serial_interval}
+
+## r_serial_interval() is a simulator for serial interval delays we use a
+## log-normal with provided parameters, but cut the tail to ensure no values
+## greater than 50 are simulated
+serial_interval <- distcrete("lnorm", w = 0, interval = 1,
+                             meanlog = log(4.7),
+                             sdlog = log(2.9))
+
+## example
+plot(0:50, serial_interval$d(0:50),
+     type = "h", col = "#5E9281", lwd = 8, lend = 2,
+     xlab = "Days from primary to secondary onset",
+     ylab = "Probability",
+     main = "Serial interval distribution",
+     cex.lab = 1.3, cex.main = 1.5)
+
+```
+
+
+
+## Onset to death
+
+`r_onset_death` will generate delays from onset to death using a discretised
+Gamma with parameters:
+
+* shape: 4.726
+* rate: 0.3151
+
+
+```{r onset_death}
+
+## temporary tweak to check effect of narrower delays
+## onset_death <- distcrete("norm", w = 0, interval = 1,
+##                          mean = 14,
+##                          sd = 1)
+
+r_onset_death <- function(n = 1, min_delay =1, max_delay = 80) {
+  ## r_onset_death() will simulate delays from the above distribution, ensuring
+  ## that simulated values do not exceed a given maximum;
+  ## note: this is total overkill for now
+  
+  onset_death <- distcrete("gamma", w = 0, interval = 1,
+                           shape = 4.726,
+                           rate = 0.3151)
+  
+  out <- onset_death$r(n)
+  to_replace <- (out < min_delay) | (out > max_delay)
+  while (any(to_replace)) {
+    out[to_replace] <- onset_death$r(sum(to_replace))
+    to_replace <- out > max_delay
+  }  
+  out
+}
+
+
+## example
+hist(r_onset_death(10000),
+     col = "#5E7192", border = "white", nclass = 30,
+     xlab = "Days from onset to death",
+     main = "Distribution of delay from onset to death",
+     cex.lab = 1.3, cex.main = 1.5, prob = TRUE)
+
+```
+
+
+
+
+## Cases per death
+
+The number of cases associated to a given death is determined as the sample size
+of a Binomial distribution with 1 "success" and a probability of CFR. This is
+implemented in [Seb Funk's function](https://github.com/sbfnk/bpmodels/blob/6de58a2fe7c24541f488fe58b0a2dfe04f45b58f/R/utils.r#L12) `rbinom_size`, reproduced here:
+
+```{r cases_per_death}
+
+hist(rbinom_size(n = 10000, x = 1, prob = 0.02),
+     col = "#A75848", border = "white", nclass = 30,
+     xlab = "Number of cases per death",
+     main = "Distribution of the numbers of cases per death, CFR = 2%",
+     cex.lab = 1.3, cex.main = 1.5)
+
+```
+
+
+
+
+
+
+
+
+<!-- ======================================================= -->
+<!-- ======================================================= -->
+<!-- ======================================================= -->
+
+# Simulation results {.tabset .tabset-fade .tabset-pills}
+
+## Outline
+
+We provide some results for:
+
+* an example figure for simulations for CFR 2% and R = 2
+
+* 1 death, with varying CFR (1%, 2%, 3%, 10%) and reproduction numbers (1.5, 2, 3)
+
+
+
+
+## Example figure
+
+We ran analyses with R = 2 and CFR = 2%
+
+```{r example_analyses}
+
+example_results <- simulate_cases(as.Date("2020-03-01"),
+                                  R = 2,
+                                  cfr = 0.02,
+                                  n_sim = 100)
+example_results
+
+```
+
+
+Figure:
+
+```{r figure_1, fig.width = 8, fig.height = 8}
+
+## extract figures
+figure_a <- example_results$plot_projections
+figure_b <- example_results$plot_projections_cumul
+
+## customisation
+figure_a <- figure_a +
+  scale_x_date(date_labels = format("%Y-%m-%d")) +
+  labs(title = NULL)
+
+figure_b <- figure_b +
+  scale_x_date(date_labels = format("%Y-%m-%d")) +
+  labs(y = "Total number\nof cases",
+       title = NULL)
+
+plot_grid(figure_a,
+          figure_b,
+          labels = c("A", "B"),
+          ncol = 1,
+          label_size = 18,
+          align = "v")
+
+```
+
+
+
+## How many cases for one death?
+
+We combine different values of CFR (1%, 2%, 3%) and reproduction numbers (1.5,
+2, 3) and run 200 simulations for each (each simulation generates 50
+trajectories for a given combination of onset dates):
+
+```{r sims_one_case}
+
+set.seed(1)
+params <- expand.grid(R = c(1.5, 2, 3),
+                      cfr = c(0.01, 0.02, 0.03, 0.1))
+params
+today <- Sys.Date()
+
+if(Sys.info()["sysname"] == "Windows"){
+  cores <- 1
+} else{
+  cores <- 3
+}
+
+## Function to run simulations for the death dates 
+sim_deaths <- function(death_dates, n_sim = 400) {
+  mclapply(
+    seq_len(nrow(params)),
+    function(i) simulate_cases(
+                    death_dates,
+                    n_sim = n_sim,
+                    R = params$R[i],
+                    cfr = params$cfr[i]),
+    mc.cores = cores
+  )
+}  
+
+
+```
+
+We run simulations for a single death on the 1st March 2020
+
+```{r }
+
+date_death <- as.Date("2020-03-01")
+sims_one_case <- sim_deaths(date_death)
+
+```
+
+We extract quantiles and averages for the different combinations of parameters,
+on the day of the death.
+
+```{r results_one_case}
+
+## function to extract results
+extract_results <- function(x, date) {
+  x <- cumulate(x$projections)
+  x <- x[get_dates(x) == date, ] %>%
+    as.integer()
+  out <- c(mean(x),
+           median(x),
+           quantile(x, c(.025, .25, .75, .975)))
+  names(out) <- c("average",
+                  "median",
+                  "lower_95",
+                  "lower_50",
+                  "upper_50",
+                  "upper_95"
+                  )
+  round(out)
+}
+
+## Function for get averages and quantiles
+get_summaries <- function(sims_cases, date) {
+  results_case <- Reduce(rbind, lapply(sims_cases, extract_results, date))
+  results_case <- cbind(params, results_case)
+  rownames(results_case) <- NULL
+  results_case
+}
+
+
+results_one_case <- get_summaries(sims_one_case, date_death)
+
+```
+
+```{r, results = "asis"}
+
+## print table
+results_one_case %>%
+  knitr::kable()
+
+```
+
+
+
+
+
+
+<!-- ======================================================= --> 
+<!-- ======================================================= --> 
+<!-- ======================================================= -->
+
+# System information {.tabset .tabset-fade .tabset-pills}
+
+## Outline
+
+The following information documents the system on which the document was
+compiled.
+
+
+## System 
+
+This provides information on the operating system.
+
+```{r system_info}
+Sys.info()
+```
+
+## R environment
+
+This provides information on the version of R used:
+
+```{r R_session}
+R.version
+```
+
+
+## R packages
+
+This provides information on the packages used:
+
+```{r R_pkg}
+sessionInfo()
+```

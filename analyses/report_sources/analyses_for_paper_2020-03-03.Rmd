@@ -274,7 +274,7 @@ if(Sys.info()["sysname"] == "Windows"){
 }
 
 ## Function to run simulations for the death dates 
-sim_deaths <- function(death_dates) {
+sim_deaths <- function(death_dates, params = NULL) {
   mclapply(
     seq_len(nrow(params)),
     function(i) simulate_cases(
@@ -288,7 +288,7 @@ sim_deaths <- function(death_dates) {
 
 
 
-sims_one_case <- sim_deaths(today)
+sims_one_case <- sim_deaths(today, params)
 
 
 ```
@@ -370,7 +370,12 @@ extract_death_dates <- function(df, country) {
 
 fr_death_dates <- extract_death_dates(df, "France")
 
-sims_fr_cases <- sim_deaths(fr_death_dates)
+## Define country specific parameters - based on report 95%CI with data as of 2020-03-02
+## No estimates for France so using current estimates from Italy
+params_fr <- expand.grid(R = c(2.0, 2.4),
+                      cfr = c(0.01, 0.02, 0.03, 0.1))
+  
+sims_fr_cases <- sim_deaths(fr_death_dates, params_fr)
 
 fr_max_date <- max(fr_death_dates)
   
@@ -398,7 +403,12 @@ trajectories for a given combination of onset dates):
 
 it_death_dates <- extract_death_dates(df, "Italy")
 
-sims_it_cases <- sim_deaths(it_death_dates)
+## Define country specific parameters - based on report 95%CI with data as of 2020-03-02
+## Rt estimates have declined since initial outbreak so these numbers will be conservative?
+params_it <- expand.grid(R = c(2.0, 2.4),
+                      cfr = c(0.01, 0.02, 0.03, 0.1))
+
+sims_it_cases <- sim_deaths(it_death_dates, params_it)
 
 it_max_date <- max(it_death_dates)
 
@@ -422,7 +432,12 @@ trajectories for a given combination of onset dates):
 
 jp_death_dates <- extract_death_dates(df, "Japan")
 
-sims_jp_cases <- sim_deaths(jp_death_dates)
+## Define country specific parameters - based on report 95%CI with data as of 2020-03-02
+## Rt estimates have declined since initial outbreak so these numbers will be conservative?
+params_jp <- expand.grid(R = c(0.8, 1.5),
+                      cfr = c(0.01, 0.02, 0.03, 0.1))
+
+sims_jp_cases <- sim_deaths(jp_death_dates, params_jp)
 
 jp_max_date <- max(jp_death_dates)
 

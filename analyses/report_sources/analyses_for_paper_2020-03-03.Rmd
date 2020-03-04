@@ -223,7 +223,7 @@ using a Geometric distribution (discretised exponential).
 
 ```{r cases_per_death}
 
-hist(rgeom(n = 10000, prob = 0.02),
+hist(1+rgeom(n = 10000, prob = 0.02),
      col = "#A75848", border = "white", nclass = 30,
      xlab = "Number of cases per death",
      main = "Distribution of the numbers of cases per death, CFR = 2%",

@@ -217,13 +217,13 @@ hist(r_onset_death(10000),
 
 ## Cases per death
 
-The number of cases associated to a given death is determined as the sample size
-of a Binomial distribution with 1 "success" and a probability of CFR. This is
-implemented in [Seb Funk's function](https://github.com/sbfnk/bpmodels/blob/6de58a2fe7c24541f488fe58b0a2dfe04f45b58f/R/utils.r#L12) `rbinom_size`, reproduced here:
+The number of cases associated to a given death is determined as the number of trials (cases)
+of a Binomial distribution with 1 "success" (deaths) and a probability of CFR. This is implemented
+using a Geometric distribution (discretised exponential).
 
 ```{r cases_per_death}
 
-hist(rbinom_size(n = 10000, x = 1, prob = 0.02),
+hist(rgeom(n = 10000, prob = 0.02),
      col = "#A75848", border = "white", nclass = 30,
      xlab = "Number of cases per death",
      main = "Distribution of the numbers of cases per death, CFR = 2%",

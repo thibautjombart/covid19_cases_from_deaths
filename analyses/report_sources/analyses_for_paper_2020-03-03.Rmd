@@ -282,7 +282,7 @@ if(Sys.info()["sysname"] == "Windows"){
     clusterCall(cl, function() library(projections))
     clusterCall(cl, function() library(parallel))
     clusterExport(cl, list("death_dates", "params"), envir = environment())
-    clusterExport(cl, list("simulate_cases"), envir = .GlobalEnv)
+    clusterExport(cl, list("simulate_cases","merge_add_projections", "merge_projections", "rotate_x","large_txt"), envir = parent.env(environment()))
     
     out <- parallel::parLapply(
       cl,
@@ -415,6 +415,7 @@ results_fr_cases %>%
 We extract quantiles and averages for the different combinations of parameters,
 on the day of the death.
 
+<!-- Exclude Italy
 ## Italy
 
 
@@ -444,7 +445,7 @@ results_it_cases %>%
   knitr::kable()
   
 ```
-
+-->
 ## Japan
 
 Run different values of CFR and reproduction number for Japan. Run 200 simulations for each (each simulation generates 50

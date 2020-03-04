@@ -267,26 +267,52 @@ params <- expand.grid(R = c(1.5, 2, 3),
 params
 today <- Sys.Date()
 
+## Function to run simulations for the death dates
 if(Sys.info()["sysname"] == "Windows"){
-  cores <- 1
-} else{
-  cores <- 3
-}
+  sim_deaths <- function(death_dates){
+    
+    cl <- parallel::makeCluster(max(parallel::detectCores()-1,1))
 
-## Function to run simulations for the death dates 
-sim_deaths <- function(death_dates) {
-  mclapply(
-    seq_len(nrow(params)),
-    function(i) simulate_cases(
+    clusterCall(cl, function() library(here))
+    clusterCall(cl, function() library(reportfactory))
+    clusterCall(cl, function() library(incidence))
+    clusterCall(cl, function() library(distcrete))
+    clusterCall(cl, function() library(epitrix))
+    clusterCall(cl, function() library(tidyverse))
+    clusterCall(cl, function() library(projections))
+    clusterCall(cl, function() library(parallel))
+    clusterExport(cl, list("death_dates"), envir = environment())
+    clusterExport(cl, list("simulate_cases", "params"), envir = .GlobalEnv)
+    
+    out <- parallel::parLapply(
+      cl,
+      seq_len(nrow(params)),
+      function(i){
+        simulate_cases(
+          death_dates,
+          n_sim = 200,
+          R = params$R[i],
+          cfr = params$cfr[i]
+        )
+      }
+    )
+    parallel::stopCluster(cl)
+    return(out)
+  }
+} else {
+  cores <- 3
+  sim_deaths <- function(death_dates) {
+    mclapply(
+      seq_len(nrow(params)),
+      function(i) simulate_cases(
                     death_dates,
                     n_sim = 200,
                     R = params$R[i],
                     cfr = params$cfr[i]),
-    mc.cores = cores
-  )
-}  
-
-
+                    mc.cores = cores
+    )
+  }  
+}
 
 sims_one_case <- sim_deaths(today)
 

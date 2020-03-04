@@ -457,7 +457,7 @@ trajectories for a given combination of onset dates):
 
 
 
-```{r sims_cases_japan}
+```{r sims_cases_south_korea}
 
 sk_death_dates <- extract_death_dates(df, "South Korea")
 
@@ -478,6 +478,33 @@ results_sk_cases %>%
   
 ```
 
+## China
+
+Run different values of CFR and reproduction number for China based on deaths reported up to the 24th of January. Run 200 simulations for each (each simulation generates 50 trajectories for a given combination of onset dates):
+
+
+```{r sims_cases_china}
+
+ch_death_dates <- extract_death_dates(df, "China")
+
+## Restrict deaths to those from the 24th Jan and previously
+ch_death_dates <- ch_death_dates[as.Date(ch_death_dates) <= as.Date("2020-01-24")]
+
+## Define country specific parameters - based on https://doi.org/10.12688/wellcomeopenres.15718.1 (may have Rt on this by end of today)
+params_ch <- expand.grid(R = c(2.0, 2.7),
+                      cfr = c(0.01, 0.02, 0.03, 0.1))
+
+sims_ch_cases <- sim_deaths(ch_death_dates, params_ch)
+
+ch_max_date <- max(ch_death_dates)
+
+results_ch_cases <- get_summaries(sims_ch_cases, ch_max_date, params_ch)
+
+## print table
+results_ch_cases %>%
+  knitr::kable()
+  
+```
 
 <!-- ======================================================= --> 
 <!-- ======================================================= --> 

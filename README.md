@@ -26,7 +26,8 @@ install.packages(incidence)
 install.packages(projections)
 install.packages(distcrete)
 install.packages(DT)
-
+install.packages("remotes")
+remotes::install_github("reconhub/reportfactory")
 ```
 
 Note that you only need to do this once (or not at all, if all these packages

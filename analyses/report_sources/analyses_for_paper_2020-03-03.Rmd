@@ -358,7 +358,8 @@ results_one_case <- get_summaries(sims_one_case, today)
 ```{r, results = "asis"}
 
 ## print table
-results_one_case %>%
+results_one_case %>% 
+  format(big.mark=" ") %>%
   knitr::kable()
 
 ```
@@ -405,8 +406,8 @@ results_fr_cases <- get_summaries(sims_fr_cases, fr_max_date)
 
 ## print table
 results_fr_cases %>%
+  format(big.mark=" ") %>%
   knitr::kable()
-
 ```
 
 We extract quantiles and averages for the different combinations of parameters,
@@ -432,6 +433,7 @@ results_it_cases <- get_summaries(sims_it_cases, it_max_date)
 
 ## print table
 results_it_cases %>%
+  format(big.mark=" ") %>%
   knitr::kable()
   
 
@@ -456,6 +458,7 @@ results_jp_cases <- get_summaries(sims_jp_cases, jp_max_date)
 
 ## print table
 results_jp_cases %>%
+  format(big.mark=" ") %>%
   knitr::kable()
   
 
@@ -481,6 +484,7 @@ results_skr_cases <- get_summaries(sims_skr_cases, skr_first_death_date)
 
 ## print table
 results_skr_cases %>%
+  format(big.mark=" ") %>%
   knitr::kable()
 
 ```

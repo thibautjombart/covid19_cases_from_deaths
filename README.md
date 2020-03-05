@@ -15,19 +15,18 @@ cases.
 
 ### Packages needed
 
-The following instructions will install the packages needed:
+The following instructions will install the packages needed if they are not present on your system:
 
 ```r
-
-install.packages(shiny)
-install.packages(ggplot2)
-install.packages(magrittr)
-install.packages(incidence)
-install.packages(projections)
-install.packages(distcrete)
-install.packages(DT)
-install.packages("remotes")
-remotes::install_github("reconhub/reportfactory")
+if (!require(pacman)) install.packages("pacman"); library(pacman)
+p_load("shiny")
+p_load("ggplot2")
+p_load("magrittr")
+p_load("incidence")
+p_load("projections")
+p_load("distcrete")
+p_load("DT")
+p_load_gh("reconhub/reportfactory")
 ```
 
 Note that you only need to do this once (or not at all, if all these packages

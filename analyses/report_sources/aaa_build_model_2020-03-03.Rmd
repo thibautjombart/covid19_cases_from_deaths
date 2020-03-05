@@ -425,15 +425,15 @@ closures; they include:
 
 make_simulator <- function(serial_interval,
                            r_onset_death,
-                           n_sim_per_iteration = 10,
-                           model = "poisson",
-                           negbinsize = 0.03) {
+                           n_sim_per_iteration = 10) {
   
   function(date_death,
            R = 2,
            cfr = 0.02,
            n_sim = 100,
-           duration = 1) {
+           duration = 1,
+           model = "poisson",
+           negbinsize = 0.03) {
 
     ## TODO: add asserters and foolproofers here
     if (R < 1) {

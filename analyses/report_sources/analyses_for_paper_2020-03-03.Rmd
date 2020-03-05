@@ -269,7 +269,7 @@ today <- Sys.Date()
 
 ## Function to run simulations for the death dates
 if(Sys.info()["sysname"] == "Windows"){
-  sim_deaths <- function(death_dates, params = NULL) {
+  sim_deaths <- function(death_dates, params = NULL, model = "negbin", negbinsize = 0.16) {
     
     cl <- parallel::makeCluster(max(parallel::detectCores()-1,1))
 
@@ -281,7 +281,7 @@ if(Sys.info()["sysname"] == "Windows"){
     clusterCall(cl, function() library(tidyverse))
     clusterCall(cl, function() library(projections))
     clusterCall(cl, function() library(parallel))
-    clusterExport(cl, list("death_dates", "params"), envir = environment())
+    clusterExport(cl, list("death_dates", "params", "model", "negbinsize"), envir = environment())
     clusterExport(cl, list("simulate_cases","merge_add_projections", "merge_projections", "rotate_x","large_txt"), envir = parent.env(environment()))
     
     out <- parallel::parLapply(
@@ -289,29 +289,33 @@ if(Sys.info()["sysname"] == "Windows"){
       seq_len(nrow(params)),
       function(i) simulate_cases(
                       death_dates,
-                      n_sim = 200,
+                      n_sim = 1000,
                       R = params$R[i],
-                      cfr = params$cfr[i])
+                      cfr = params$cfr[i],
+                      model = model,
+                      negbinsize = negbinsize)
     )
     parallel::stopCluster(cl)
     return(out)
   }
 } else {
   cores <- 3
-  sim_deaths <- function(death_dates, params = NULL) {
+  sim_deaths <- function(death_dates, params = NULL, model = "negbin", negbinsize = 0.16) {
     mclapply(
       seq_len(nrow(params)),
       function(i) simulate_cases(
                       death_dates,
-                      n_sim = 200,
+                      n_sim = 1000,
                       R = params$R[i],
-                      cfr = params$cfr[i]),
+                      cfr = params$cfr[i],
+                      model = model,
+                      negbinsize = negbinsize),
       mc.cores = cores
     )
   }  
 }
 
-sims_one_case <- sim_deaths(today, params)
+sims_one_case <- sim_deaths(today, params, model = "negbin", negbinsize = 0.16)
 
 ```
 

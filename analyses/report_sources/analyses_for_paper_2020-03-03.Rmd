@@ -606,11 +606,13 @@ results_sp_cases %>%
 
 results_sp_cases$country <- "Spain"
 results_fr_cases$country <- "France"
+results_jp_cases$country <- "Japan"
 results_sk_cases$country <- "South Korea"
 results_ch_cases$country <- "China"
 
 results_country_cases <- rbind(results_sp_cases, 
-                               results_fr_cases, 
+                               results_fr_cases,
+                               results_jp_cases,
                                results_sk_cases, 
                                results_ch_cases)
 

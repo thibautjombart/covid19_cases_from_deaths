@@ -425,7 +425,9 @@ closures; they include:
 
 make_simulator <- function(serial_interval,
                            r_onset_death,
-                           n_sim_per_iteration = 10) {
+                           n_sim_per_iteration = 10,
+                           model = "poisson",
+                           negbinsize = 0.03) {
   
   function(date_death,
            R = 2,
@@ -523,7 +525,9 @@ make_simulator <- function(serial_interval,
                                     R = R,
                                     si = serial_interval,
                                     n_sim = n_sim_per_iteration,
-                                    n_days = as.integer(last_day_simul - max(get_dates(e)))))
+                                    n_days = as.integer(last_day_simul - max(get_dates(e))),
+                                    model = model,
+                                    size = negbinsize))
 
       ## step 4
       proj[[i]] <- merge_add_projections(list_proj)

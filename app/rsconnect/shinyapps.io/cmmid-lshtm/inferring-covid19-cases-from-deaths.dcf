@@ -5,8 +5,8 @@ account: cmmid-lshtm
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 1898516
-bundleId: 2849900
+bundleId: 2852169
 url: https://cmmid-lshtm.shinyapps.io/inferring-covid19-cases-from-deaths/
-when: 1583317551.48555
+when: 1583367764.51672
 asMultiple: FALSE
 asStatic: FALSE

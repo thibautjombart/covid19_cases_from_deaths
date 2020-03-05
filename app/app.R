@@ -15,6 +15,7 @@ lapply(scripts, source)
 
 ## Define UI for application that draws a histogram
 ui <- fluidPage(
+  tags$base(target = "_parent"),
   ## Call Mathjax once to display equations throughout the document
   withMathJax(),
   

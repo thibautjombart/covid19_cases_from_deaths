@@ -22,8 +22,9 @@ knitr::opts_chunk$set(echo = TRUE,
                       fig.height = 6,
                       dpi = 150,
                       warning = FALSE,
-                      message = FALSE)
-```
+                      message = FALSE,
+                      cache = FALSE)
+``` 
 
 
 
@@ -269,7 +270,7 @@ today <- Sys.Date()
 
 ## Function to run simulations for the death dates
 if(Sys.info()["sysname"] == "Windows"){
-  sim_deaths <- function(death_dates, params = NULL) {
+  sim_deaths <- function(death_dates, params = NULL, duration) {
     
     cl <- parallel::makeCluster(max(parallel::detectCores()-1,1))
 
@@ -281,7 +282,7 @@ if(Sys.info()["sysname"] == "Windows"){
     clusterCall(cl, function() library(tidyverse))
     clusterCall(cl, function() library(projections))
     clusterCall(cl, function() library(parallel))
-    clusterExport(cl, list("death_dates", "params"), envir = environment())
+    clusterExport(cl, list("death_dates", "params", "duration"), envir = environment())
     clusterExport(cl, list("simulate_cases","merge_add_projections", "merge_projections", "rotate_x","large_txt"), envir = parent.env(environment()))
     
     out <- parallel::parLapply(
@@ -291,7 +292,8 @@ if(Sys.info()["sysname"] == "Windows"){
                       death_dates,
                       n_sim = 200,
                       R = params$R[i],
-                      cfr = params$cfr[i])
+                      cfr = params$cfr[i], 
+                      duration = duration)
     )
     parallel::stopCluster(cl)
     return(out)
@@ -305,13 +307,14 @@ if(Sys.info()["sysname"] == "Windows"){
                       death_dates,
                       n_sim = 200,
                       R = params$R[i],
-                      cfr = params$cfr[i]),
+                      cfr = params$cfr[i],
+                      duration = duration),
       mc.cores = cores
     )
   }  
 }
 
-sims_one_case <- sim_deaths(today, params)
+sims_one_case <- sim_deaths(today, params, duration = 5)
 
 ```
 
@@ -347,7 +350,7 @@ get_summaries <- function(sims_cases, date, params = NULL) {
 }
 
 
-results_one_case <- get_summaries(sims_one_case, today, params)
+results_one_case <- get_summaries(sims_one_case, today+5, params)
 
 ```
 
@@ -393,12 +396,16 @@ extract_death_dates <- function(df, country) {
 
 fr_death_dates <- extract_death_dates(df, "France")
 
+fr_max_report_date <- df %>% filter(country == "France") %>% .$date %>% max
+
+
 ## Define country specific parameters - based on report 95%CI with data as of 2020-03-02
 ## No estimates for France so using current estimates from Italy
-params_fr <- expand.grid(R = c(2.0, 2.4),
+params_fr <- expand.grid(R = c(2.0, 3.4),
                       cfr = c(0.01, 0.02, 0.03))
   
 sims_fr_cases <- sim_deaths(fr_death_dates, params_fr)
+
 
 fr_max_date <- max(fr_death_dates)
   
@@ -411,6 +418,7 @@ fr_cases_total <- df %>% filter(country == "France",
 fr_reported_cases <- sum(fr_cases_total$new_case)
 
 results_fr_cases$reported <- fr_reported_cases
+results_fr_cases$deaths <- length(fr_death_dates)
 
 ## print table
 results_fr_cases %>%
@@ -461,7 +469,7 @@ trajectories for a given combination of onset dates):
 
 
 
-```{r sims_cases_japan}
+```{r sims_cases_japan, eval=FALSE, include=FALSE}
 
 jp_death_dates <- extract_death_dates(df, "Japan")
 
@@ -483,6 +491,7 @@ jp_cases_total <- df %>% filter(country == "Japan",
 jp_reported_cases <- sum(jp_cases_total$new_case)
 
 results_jp_cases$reported <- jp_reported_cases
+results_jp_cases$deaths <- length(jp_death_dates)
 
 ## print table
 results_jp_cases %>%
@@ -499,7 +508,7 @@ trajectories for a given combination of onset dates):
 
 
 
-```{r sims_cases_south_korea}
+```{r sims_cases_south_korea, include=FALSE}
 
 sk_death_dates <- extract_death_dates(df, "South Korea")
 
@@ -520,6 +529,7 @@ sk_cases_total <- df %>% filter(country == "South Korea",
 sk_reported_cases <- sum(sk_cases_total$new_case)
 
 results_sk_cases$reported <- sk_reported_cases
+results_sk_cases$deaths <- length(sk_death_dates)
 
 ## print table
 results_sk_cases %>%
@@ -538,25 +548,27 @@ Run different values of CFR and reproduction number for China based on deaths re
 ch_death_dates <- extract_death_dates(df, "China")
 
 ## Restrict deaths to those from the 24th Jan and previously
-ch_death_dates <- ch_death_dates[as.Date(ch_death_dates) <= as.Date("2020-01-24")]
+ch_death_dates <- ch_death_dates[as.Date(ch_death_dates) <= as.Date("2020-01-21")]
 
 ## Define country specific parameters - based on https://doi.org/10.12688/wellcomeopenres.15718.1 (may have Rt on this by end of today)
 params_ch <- expand.grid(R = c(2.0, 2.7),
                       cfr = c(0.01, 0.02, 0.03))
 
-sims_ch_cases <- sim_deaths(ch_death_dates, params_ch)
+sims_ch_cases <- sim_deaths(ch_death_dates, params_ch, duration = 14)
 
 ch_max_date <- max(ch_death_dates)
 
-results_ch_cases <- get_summaries(sims_ch_cases, ch_max_date, params_ch)
+results_ch_cases <- get_summaries(sims_ch_cases, ch_max_date + 14, params_ch)
 
 
 ch_cases_total <- df %>% filter(country == "China",
-                                   date <= as.Date("2020-01-24")) 
+                                   date <= as.Date("2020-01-24") + 14) 
 
 ch_reported_cases <- sum(ch_cases_total$new_case)
 
 results_ch_cases$reported <- ch_reported_cases
+results_ch_cases$deaths <- length(ch_death_dates)
+
 
 ## print table
 results_ch_cases %>%
@@ -572,7 +584,8 @@ Run different values of CFR and reproduction number for Spain based on deaths re
 
 ```{r sims_cases_spain}
 
-sp_death_dates <- rep(as.Date('2020-03-04'),2)
+sp_death_dates <- extract_death_dates(df, "Spain")
+sp_death_dates <- rep(as.Date('2020-03-04'),2) ## There were two but not in data
 
 
 ## Define country specific parameters - based on https://doi.org/10.12688/wellcomeopenres.15718.1 (may have Rt on this by end of today)
@@ -589,8 +602,10 @@ sp_cases_total <- df %>% filter(country == "Spain",
                                    date <= sp_max_date) 
 
 sp_reported_cases <- sum(sp_cases_total$new_case)
+sp_reported_cases <- 202 ## Not updated in data yet
 
 results_sp_cases$reported <- sp_reported_cases
+results_sp_cases$deaths <- length(sp_death_dates)
 
 ## print table
 results_sp_cases %>%

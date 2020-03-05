@@ -19,13 +19,13 @@ The following instructions will install the packages needed:
 
 ```r
 
-install.packages(shiny)
-install.packages(ggplot2)
-install.packages(magrittr)
-install.packages(incidence)
-install.packages(projections)
-install.packages(distcrete)
-install.packages(DT)
+install.packages("shiny")
+install.packages("ggplot2")
+install.packages("magrittr")
+install.packages("incidence")
+install.packages("projections")
+install.packages("distcrete")
+install.packages("DT")
 install.packages("remotes")
 remotes::install_github("reconhub/reportfactory")
 ```

@@ -468,7 +468,7 @@ jp_death_dates <- extract_death_dates(df, "Japan")
 ## Define country specific parameters - based on report 95%CI with data as of 2020-03-02
 ## Restricted to 1> R estimates due to bug/feature of branching process?
 ## Rt estimates have declined since initial outbreak so these numbers will be conservative?
-params_jp <- expand.grid(R = c(0.7, 1.4),
+params_jp <- expand.grid(R = c(1.00, 1.4),
                       cfr = c(0.01, 0.02, 0.03))
 
 sims_jp_cases <- sim_deaths(jp_death_dates, params_jp)

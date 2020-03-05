@@ -96,7 +96,11 @@ We provide some results for:
 
 * 1 death, with varying CFR (1%, 2%, 3%, 10%) and reproduction numbers (1.5, 2, 3)
 
-* central estimates for data of countries which recently notified deaths: ... to complete
+* illustration of a set of simulations for a single death on 1st March 2020
+
+
+
+
 
 
 ## How many cases for one death?
@@ -108,14 +112,14 @@ trajectories for a given combination of onset dates):
 ```{r sims_one_case}
 
 set.seed(1)
-params <- expand.grid(R = c(1.5, 2, 3),
+sim_params <- expand.grid(R = c(1.5, 2, 3),
                       cfr = c(0.01, 0.02, 0.03, 0.1))
-params
+sim_params
 today <- Sys.Date()
 
 ## Function to run simulations for the death dates
 if(Sys.info()["sysname"] == "Windows"){
-  sim_deaths <- function(death_dates, params = NULL) {
+  sim_deaths <- function(death_dates, sim_params = NULL) {
     
     cl <- parallel::makeCluster(max(parallel::detectCores()-1,1))
 
@@ -127,7 +131,7 @@ if(Sys.info()["sysname"] == "Windows"){
     clusterCall(cl, function() library(tidyverse))
     clusterCall(cl, function() library(projections))
     clusterCall(cl, function() library(parallel))
-    clusterExport(cl, list("death_dates", "params"),
+    clusterExport(cl, list("death_dates", "sim_params"),
                   envir = environment())
     clusterExport(cl, list("simulate_cases",
                            "merge_add_projections",
@@ -138,12 +142,12 @@ if(Sys.info()["sysname"] == "Windows"){
     
     out <- parallel::parLapply(
       cl,
-      seq_len(nrow(params)),
+      seq_len(nrow(sim_params)),
       function(i) simulate_cases(
                       death_dates,
                       n_sim = 200,
-                      R = params$R[i],
-                      cfr = params$cfr[i],
+                      R = sim_params$R[i],
+                      cfr = sim_params$cfr[i],
                       duration = 1)
     )
     parallel::stopCluster(cl)
@@ -151,21 +155,21 @@ if(Sys.info()["sysname"] == "Windows"){
   }
 } else {
   cores <- 3
-  sim_deaths <- function(death_dates, params = NULL) {
+  sim_deaths <- function(death_dates, sim_params = NULL) {
     mclapply(
-      seq_len(nrow(params)),
+      seq_len(nrow(sim_params)),
       function(i) simulate_cases(
                       death_dates,
                       n_sim = 200,
-                      R = params$R[i],
-                      cfr = params$cfr[i]),
+                      R = sim_params$R[i],
+                      cfr = sim_params$cfr[i]),
       mc.cores = cores
     )
   }  
 }
 
 date_death <- as.Date("2020-03-01")
-sims_one_case <- sim_deaths(date_death, params)
+sims_one_case <- sim_deaths(date_death, sim_params)
 
 ```
 
@@ -193,9 +197,9 @@ extract_results <- function(x, date) {
 }
 
 ## Function for get averages and quantiles
-get_summaries <- function(sims_cases, date, params = NULL) {
+get_summaries <- function(sims_cases, date, sim_params = NULL) {
   results_case <- Reduce(rbind, lapply(sims_cases, extract_results, date))
-  results_case <- cbind(params, results_case) %>%
+  results_case <- cbind(sim_params, results_case) %>%
     mutate(cfr = paste(100 * cfr, "%")) %>%
     rename("lower 50%" = lower_50,
            "lower 95%" = lower_95,
@@ -206,7 +210,7 @@ get_summaries <- function(sims_cases, date, params = NULL) {
 }
 
 
-results_one_case <- get_summaries(sims_one_case, date_death, params)
+results_one_case <- get_summaries(sims_one_case, date_death, sim_params)
 
 ```
 
@@ -222,11 +226,67 @@ results_one_case %>%
 
 
 
+## Illustration
+
+We generate a figure for the paper for a single death on 1st March 2020, R = 2,
+CFR = 2%, 200 simulations:
+
+```{r x}
+
+x <- simulate_cases(date_death, R = 2, cfr = 0.02, duration = 1, n_sim = 200)
+
+```
+
+Generate plot:
+
+```{r figure_1, dev = c("png", "pdf"), fig.path = "figures/"}
+
+ribbon_color <- "#0070A5"
+ribbon_alpha <- 0.4
+
+add_ribbon <- function(x, proj, ci = 0.95) {
+  alpha <- 1 - ci
+  add_projections(x,
+                  proj,
+                  quantiles = FALSE,
+                  ribbon_alpha = ribbon_alpha,
+                  ribbon_color = ribbon_color,
+                  ribbon_quantiles = c(alpha / 2, 1 - (alpha  / 2)))
+}
+
+proj <- cumulate(x$projections)
+
+figure_1 <- plot(proj,
+                 quantiles = FALSE,
+                 ribbon_alpha = ribbon_alpha,
+                 ribbon_color = ribbon_color,
+                 ribbon_quantiles = c(0.025, .975)) %>%
+  ## add_ribbon(proj, 0.85) %>% 
+  add_ribbon(proj, 0.75) %>% 
+  ## add_ribbon(proj, 0.65) %>% 
+  add_ribbon(proj, 0.5) %>% 
+  ## add_ribbon(proj, 0.45) %>% 
+  ## add_ribbon(proj, 0.35) %>% 
+  add_ribbon(proj, 0.25) +
+  theme_bw() +
+  rotate_x +
+  large_txt +
+  geom_vline(data = data.frame(death = date_death),
+             aes(xintercept = death),
+             color = "#C30A2C", lwd = 1.5, alpha = .5) +
+  scale_x_date(date_label = "%d %b %Y") +
+  labs(y = "Total number of cases",
+       title = NULL)
+
+figure_1
+
+```
 
 
 
-<!-- ======================================================= --> 
-<!-- ======================================================= --> 
+
+<!-- =======================================================  -->
+<!-- =======================================================  -->
 <!-- ======================================================= -->
 
 # System information {.tabset .tabset-fade .tabset-pills}

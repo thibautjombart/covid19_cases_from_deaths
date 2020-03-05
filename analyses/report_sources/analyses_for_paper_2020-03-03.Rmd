@@ -396,7 +396,7 @@ fr_death_dates <- extract_death_dates(df, "France")
 ## Define country specific parameters - based on report 95%CI with data as of 2020-03-02
 ## No estimates for France so using current estimates from Italy
 params_fr <- expand.grid(R = c(2.0, 2.4),
-                      cfr = c(0.01, 0.02, 0.03, 0.1))
+                      cfr = c(0.01, 0.02, 0.03))
   
 sims_fr_cases <- sim_deaths(fr_death_dates, params_fr)
 
@@ -404,6 +404,13 @@ fr_max_date <- max(fr_death_dates)
   
 ## get table
 results_fr_cases <- get_summaries(sims_fr_cases, fr_max_date, params_fr)
+
+fr_cases_total <- df %>% filter(country == "France",
+                                   date <= fr_max_date) 
+
+fr_reported_cases <- sum(fr_cases_total$new_case)
+
+results_fr_cases$reported <- fr_reported_cases
 
 ## print table
 results_fr_cases %>%
@@ -415,7 +422,7 @@ results_fr_cases %>%
 We extract quantiles and averages for the different combinations of parameters,
 on the day of the death.
 
-<!-- Exclude Italy
+
 ## Italy
 
 
@@ -423,7 +430,7 @@ Run different values of CFR and reproduction number for Italy. Run 200 simulatio
 trajectories for a given combination of onset dates):
 
 
-```{r sims_cases_italy}
+```{r sims_cases_italy, eval=FALSE, include=FALSE}
 
 
 it_death_dates <- extract_death_dates(df, "Italy")
@@ -445,7 +452,8 @@ results_it_cases %>%
   knitr::kable()
   
 ```
--->
+
+
 ## Japan
 
 Run different values of CFR and reproduction number for Japan. Run 200 simulations for each (each simulation generates 50
@@ -460,14 +468,21 @@ jp_death_dates <- extract_death_dates(df, "Japan")
 ## Define country specific parameters - based on report 95%CI with data as of 2020-03-02
 ## Restricted to 1> R estimates due to bug/feature of branching process?
 ## Rt estimates have declined since initial outbreak so these numbers will be conservative?
-params_jp <- expand.grid(R = c(1.0, 1.5),
-                      cfr = c(0.01, 0.02, 0.03, 0.1))
+params_jp <- expand.grid(R = c(0.7, 1.4),
+                      cfr = c(0.01, 0.02, 0.03))
 
 sims_jp_cases <- sim_deaths(jp_death_dates, params_jp)
 
 jp_max_date <- max(jp_death_dates)
 
 results_jp_cases <- get_summaries(sims_jp_cases, jp_max_date, params_jp)
+
+jp_cases_total <- df %>% filter(country == "Japan",
+                                   date <= jp_max_date)
+
+jp_reported_cases <- sum(jp_cases_total$new_case)
+
+results_jp_cases$reported <- jp_reported_cases
 
 ## print table
 results_jp_cases %>%
@@ -490,14 +505,21 @@ sk_death_dates <- extract_death_dates(df, "South Korea")
 
 ## Define country specific parameters - based on report 95%CI with data as of 2020-03-02
 ## Rt estimates have declined since initial outbreak so these numbers will be conservative?
-params_sk <- expand.grid(R = c(1.3, 1.5),
-                      cfr = c(0.01, 0.02, 0.03, 0.1))
+params_sk <- expand.grid(R = c(1.2, 1.4),
+                      cfr = c(0.01, 0.02, 0.03))
 
 sims_sk_cases <- sim_deaths(sk_death_dates, params_sk)
 
 sk_max_date <- max(sk_death_dates)
 
 results_sk_cases <- get_summaries(sims_sk_cases, sk_max_date, params_sk)
+
+sk_cases_total <- df %>% filter(country == "South Korea",
+                                   date <= sk_max_date) 
+
+sk_reported_cases <- sum(sk_cases_total$new_case)
+
+results_sk_cases$reported <- sk_reported_cases
 
 ## print table
 results_sk_cases %>%
@@ -520,7 +542,7 @@ ch_death_dates <- ch_death_dates[as.Date(ch_death_dates) <= as.Date("2020-01-24"
 
 ## Define country specific parameters - based on https://doi.org/10.12688/wellcomeopenres.15718.1 (may have Rt on this by end of today)
 params_ch <- expand.grid(R = c(2.0, 2.7),
-                      cfr = c(0.01, 0.02, 0.03, 0.1))
+                      cfr = c(0.01, 0.02, 0.03))
 
 sims_ch_cases <- sim_deaths(ch_death_dates, params_ch)
 
@@ -528,11 +550,84 @@ ch_max_date <- max(ch_death_dates)
 
 results_ch_cases <- get_summaries(sims_ch_cases, ch_max_date, params_ch)
 
+
+ch_cases_total <- df %>% filter(country == "China",
+                                   date <= as.Date("2020-01-24")) 
+
+ch_reported_cases <- sum(ch_cases_total$new_case)
+
+results_ch_cases$reported <- ch_reported_cases
+
 ## print table
 results_ch_cases %>%
   format(big.mark=" ") %>%
   knitr::kable()
 ```
+
+
+## Spain
+
+Run different values of CFR and reproduction number for Spain based on deaths reported up to the 24th of January. Run 200 simulations for each (each simulation generates 50 trajectories for a given combination of onset dates):
+
+
+```{r sims_cases_spain}
+
+sp_death_dates <- rep(as.Date('2020-03-04'),2)
+
+
+## Define country specific parameters - based on https://doi.org/10.12688/wellcomeopenres.15718.1 (may have Rt on this by end of today)
+params_sp <- expand.grid(R = c(1.3, 3.1),
+                      cfr = c(0.01, 0.02, 0.03))
+
+sims_sp_cases <- sim_deaths(sp_death_dates, params_sp)
+
+sp_max_date <- max(sp_death_dates)
+
+results_sp_cases <- get_summaries(sims_sp_cases, sp_max_date, params_sp)
+
+sp_cases_total <- df %>% filter(country == "Spain",
+                                   date <= sp_max_date) 
+
+sp_reported_cases <- sum(sp_cases_total$new_case)
+
+results_sp_cases$reported <- sp_reported_cases
+
+## print table
+results_sp_cases %>%
+  format(big.mark=" ") %>%
+  knitr::kable()
+```
+
+
+## Combine countries
+
+```{r sims_cases_countries}
+
+
+results_sp_cases$country <- "Spain"
+results_fr_cases$country <- "France"
+results_sk_cases$country <- "South Korea"
+results_ch_cases$country <- "China"
+
+results_country_cases <- rbind(results_sp_cases, 
+                               results_fr_cases, 
+                               results_sk_cases, 
+                               results_ch_cases)
+
+## print table
+results_country_cases %>%
+  format(big.mark=" ") %>%
+  knitr::kable()
+
+country_data_path <- here::here('data',
+                                'country_cases.csv')
+
+
+write.csv(results_country_cases, file = country_data_path,
+          row.names = F)
+
+```
+
 
 <!-- ======================================================= --> 
 <!-- ======================================================= --> 

@@ -270,7 +270,7 @@ today <- Sys.Date()
 
 ## Function to run simulations for the death dates
 if(Sys.info()["sysname"] == "Windows"){
-  sim_deaths <- function(death_dates, params = NULL, duration) {
+  sim_deaths <- function(death_dates, params = NULL, duration = 0) {
     
     cl <- parallel::makeCluster(max(parallel::detectCores()-1,1))
 
@@ -469,9 +469,12 @@ trajectories for a given combination of onset dates):
 
 
 
-```{r sims_cases_japan, eval=FALSE, include=FALSE}
+```{r sims_cases_japan}
 
 jp_death_dates <- extract_death_dates(df, "Japan")
+
+# Get the deaths of the first dates
+jp_first_death_dates <- jp_death_dates[jp_death_dates == min(jp_death_dates)]
 
 ## Define country specific parameters - based on report 95%CI with data as of 2020-03-02
 ## Restricted to 1> R estimates due to bug/feature of branching process?
@@ -479,9 +482,9 @@ jp_death_dates <- extract_death_dates(df, "Japan")
 params_jp <- expand.grid(R = c(1.00, 1.4),
                       cfr = c(0.01, 0.02, 0.03))
 
-sims_jp_cases <- sim_deaths(jp_death_dates, params_jp)
+sims_jp_cases <- sim_deaths(jp_first_death_dates, params_jp, duration = 14)
 
-jp_max_date <- max(jp_death_dates)
+jp_max_date <- max(jp_first_death_dates) + 14
 
 results_jp_cases <- get_summaries(sims_jp_cases, jp_max_date, params_jp)
 
@@ -508,18 +511,20 @@ trajectories for a given combination of onset dates):
 
 
 
-```{r sims_cases_south_korea, include=FALSE}
+```{r sims_cases_south_korea}
 
 sk_death_dates <- extract_death_dates(df, "South Korea")
 
+sk_first_death_dates <- sk_death_dates[sk_death_dates == min(sk_death_dates)]
+
 ## Define country specific parameters - based on report 95%CI with data as of 2020-03-02
 ## Rt estimates have declined since initial outbreak so these numbers will be conservative?
-params_sk <- expand.grid(R = c(1.2, 1.4),
+params_sk <- expand.grid(R = c(2, 3),
                       cfr = c(0.01, 0.02, 0.03))
 
-sims_sk_cases <- sim_deaths(sk_death_dates, params_sk)
+sims_sk_cases <- sim_deaths(sk_first_death_dates, params_sk, duration = 14)
 
-sk_max_date <- max(sk_death_dates)
+sk_max_date <- max(sk_first_death_dates) + 14
 
 results_sk_cases <- get_summaries(sims_sk_cases, sk_max_date, params_sk)
 
@@ -547,22 +552,23 @@ Run different values of CFR and reproduction number for China based on deaths re
 
 ch_death_dates <- extract_death_dates(df, "China")
 
-## Restrict deaths to those from the 24th Jan and previously
-ch_death_dates <- ch_death_dates[as.Date(ch_death_dates) <= as.Date("2020-01-21")]
+ch_first_death_dates <- ch_death_dates[ch_death_dates == min(ch_death_dates)]
+
+ch_first_death_dates + 14
 
 ## Define country specific parameters - based on https://doi.org/10.12688/wellcomeopenres.15718.1 (may have Rt on this by end of today)
 params_ch <- expand.grid(R = c(2.0, 2.7),
                       cfr = c(0.01, 0.02, 0.03))
 
-sims_ch_cases <- sim_deaths(ch_death_dates, params_ch, duration = 14)
+sims_ch_cases <- sim_deaths(ch_first_death_dates, params_ch, duration = 14)
 
-ch_max_date <- max(ch_death_dates)
+ch_max_date <- max(ch_first_death_dates) + 14
 
-results_ch_cases <- get_summaries(sims_ch_cases, ch_max_date + 14, params_ch)
+results_ch_cases <- get_summaries(sims_ch_cases, ch_max_date, params_ch)
 
 
 ch_cases_total <- df %>% filter(country == "China",
-                                   date <= as.Date("2020-01-24") + 14) 
+                                   date <= ch_max_date) 
 
 ch_reported_cases <- sum(ch_cases_total$new_case)
 

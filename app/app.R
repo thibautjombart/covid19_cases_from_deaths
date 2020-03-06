@@ -26,8 +26,8 @@ ui <- fluidPage(
   withTags({
     div(
         HTML("<p style='max-width:95%;'><strong>Authors</strong>: 
-          Thibaut Jombart, Sam Abbott, Amy Gimma, Kevin van Zandvoort,
-          Christopher Jarvis, Timothy Russell, Sebastian Funk, Hamish Gibbs, 
+          Thibaut Jombart, Sam Abbott, Amy Gimma, Kevin Zandvoort, Sam Clifford,
+          Christopher Jarvis, Timothy Russell, Sebastian Funk, Hamrish Gibbs, 
           Rosalind Eggo, Adam Kucharski, 
           <a href='https://cmmid.github.io/groups/ncov-group'>
           <i>CMMID COVID-19 Working Group*</i></a>,
@@ -50,7 +50,8 @@ ui <- fluidPage(
       textInput("date_death",
                 paste("Dates of Death",
                       "(Format 'yyyy-mm-dd', e.g. 2020-02-18,",
-                      "separated by spaces or new lines):"),
+                      "separated by spaces or new lines. The date range
+                      must be 7 days or less):"),
                 paste(Sys.Date(), "...")),
       verbatimTextOutput("date_clean"),
       h2("Model input"),
@@ -124,7 +125,27 @@ server <- function(input, output) {
                                 split = "[[:blank:][:space:],;]+"))
     clean_date <- gsub("[.]", "", date_txt)
     clean_date <- as.Date(unlist(clean_date))
-    clean_date[!is.na(clean_date)]
+    clean_date <- clean_date[!is.na(clean_date)]
+    clean_date <- clean_date[order(clean_date)]
+    date_range <- clean_date[length(clean_date)] - clean_date[1]
+    
+    if(as.numeric(date_range) > 7) {
+      showModal(modalDialog(
+        title = "Error: Date range is more than 7 days",
+        "The date range is limited to 7 day or less. We assume constant 
+        transmissibility (R) over time, which implies that behaviour change and 
+        control measures have not taken place yet, and that there is no 
+        depletion of susceptible individuals. Consequently, our method should 
+        only be used in the early stages of a new epidemic, where these 
+        assumptions are reasonable. Similarly, the assumption that each death 
+        reflects independent, additive epidemic trajectories is most likely to 
+        hold true early on, when reported deaths are close in time (e.g. no more 
+        than a week apart). Used over longer time periods, our approach is 
+        likely to overestimate epidemic sizes.",
+        easyClose = TRUE))
+    }
+    clean_date
+   
   }, ignoreNULL = FALSE)
   
   
@@ -181,4 +202,3 @@ server <- function(input, output) {
 
 ## Run the application 
 shinyApp(ui = ui, server = server)
-

@@ -18,7 +18,11 @@ cases.
 The following instructions will install the packages needed if they are not present on your system:
 
 ```r
-if (!require(pacman)) install.packages("pacman"); library(pacman)
+
+if (!require(pacman)) {
+  install.packages("pacman")
+  library(pacman)
+}
 p_load("shiny")
 p_load("ggplot2")
 p_load("magrittr")
@@ -27,6 +31,7 @@ p_load("projections")
 p_load("distcrete")
 p_load("DT")
 p_load_gh("reconhub/reportfactory")
+
 ```
 
 Note that you only need to do this once (or not at all, if all these packages

@@ -132,7 +132,7 @@ server <- function(input, output) {
     if(as.numeric(date_range) > 7) {
       showModal(modalDialog(
         title = "Error: Date range is more than 7 days",
-        "The date range is limited to 7 day or less. We also assume constant 
+        "The date range is limited to 7 day or less. We assume constant 
         transmissibility (R) over time, which implies that behaviour change and 
         control measures have not taken place yet, and that there is no 
         depletion of susceptible individuals. Consequently, our method should 

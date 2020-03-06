@@ -26,13 +26,8 @@ ui <- fluidPage(
   withTags({
     div(
         HTML("<p style='max-width:95%;'><strong>Authors</strong>: 
-<<<<<<< HEAD:app/app.R
-          Thibaut Jombart, Sam Abbott, Amy Gimma, Kevin van Zandvoort,
-          Christopher Jarvis, Timothy Russell, Sebastian Funk, Hamish Gibbs, 
-=======
           Thibaut Jombart, Sam Abbott, Amy Gimma, Kevin Zandvoort, Sam Clifford,
           Christopher Jarvis, Timothy Russell, Sebastian Funk, Hamrish Gibbs, 
->>>>>>> 1a1fe59... fix typo:app/death_to_case.R
           Rosalind Eggo, Adam Kucharski, 
           <a href='https://cmmid.github.io/groups/ncov-group'>
           <i>CMMID COVID-19 Working Group*</i></a>,

@@ -48,7 +48,7 @@ within a decent web browser by clicking on "Open in Browser".
 
 
 
-## Model
+# Using the 'analyses' reportfactory
 
 This folder contains a
 [reportfactory](https://github.com/reconhub/reportfactory) with reports
@@ -56,7 +56,7 @@ providing a proof of concept and implementation of the model used for
 predicting cases from recent COVID-19 deaths.
 
 
-### Initial setup
+## Initial setup
 
 You will first need to install dependencies before compiling the documents in
 this factory. We recommend using the latest version of R. Double-click on
@@ -75,7 +75,7 @@ install_deps()
 
 
 
-### Compiling the report
+## Compiling the reports
 
  To compile the report, double-click on `open.Rproj` (or just start R
 in the `analyses/` folder) and type:
@@ -91,7 +91,7 @@ be generated in `report_outputs`.
 
 
 
-### Using the source
+## Using the source
 
 The source of the report is an *Rmarkdown* document stored in
 `report_sources/`. If you plan on working on your own local copy, we recommend

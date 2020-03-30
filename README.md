@@ -1,3 +1,4 @@
+[![DOI](https://zenodo.org/badge/244454364.svg)](https://zenodo.org/badge/latestdoi/244454364)
 
 # Using the shiny app
 

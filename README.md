@@ -107,3 +107,9 @@ latest version of reports.
 
 This is work in progress, which has not been peer-reviewed yet. Do not use
 without consulting me before.
+
+
+# Distribution
+
+* Code work is distributed under [MIT License](https://opensource.org/licenses/MIT) (copyright: Thibaut Jombart 2020). 
+* Other documents (`analyses/`) are distributed under [CC-BY](https://creativecommons.org/licenses/by/4.0/)

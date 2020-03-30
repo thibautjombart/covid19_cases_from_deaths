@@ -241,7 +241,7 @@ using a Geometric distribution (discretised exponential).
 
 ```{r cases_per_death}
 
-hist(1+rgeom(n = 10000, prob = 0.02),
+hist(1 + rgeom(n = 10000, prob = 0.02),
      col = "#A75848", border = "white", nclass = 30,
      xlab = "Number of cases per death",
      main = "Distribution of the numbers of cases per death, CFR = 2%",
@@ -260,7 +260,7 @@ approach described above. We assume $R = 2$ and $CFR = 2%$.
 
 ## get simulated dates of onset
 cfr <- 0.02
-n_cases_per_death <- 1+rgeom(1, prob = cfr)
+n_cases_per_death <- 1 + rgeom(1, prob = cfr)
 date_death <- Sys.Date()
 sim_onset <- rep(date_death - 14, n_cases_per_death)
 head(sim_onset)
@@ -504,7 +504,7 @@ make_simulator <- function(serial_interval,
       ## projections for each death
       ## 
       all_sim_onset[[i]] <- date_death - r_onset_death(n_death)
-      all_sim_n_cases[[i]] <- 1+rgeom(n=n_death, prob=cfr)
+      all_sim_n_cases[[i]] <- 1 + rgeom(n = n_death, prob = cfr)
       
       sim_onset <- lapply(seq_len(n_death),
                           function(j) rep(all_sim_onset[[i]][j],
